@@ -17,6 +17,10 @@ use lav45\activityLogger\modules\models\ActivityLog;
 class ActivityLogListView extends ListView
 {
     /**
+     * @var string
+     */
+    public $template = '<h4>[ {entity_name}{entity_id} ] {user_name} {action} <span>{created_at}</span>{env}</h4><ul class="details">{data}</ul>';
+    /**
      * @var string|array|Formatter
      */
     private $formatter = 'formatter';
@@ -37,45 +41,44 @@ class ActivityLogListView extends ListView
      * @param int $index
      * @param self $widget
      * @return string
-     * @throws \yii\base\InvalidConfigException
      */
     public function renderView($model, $key, $index, $widget)
     {
-        $str = '<h4>';
-        $str .= '[ ';
-        $str .= Html::a(Html::encode($model->entity_name), Url::current([
+        $entity_id = $env = '';
+        $entity_name = Html::a(Html::encode($model->entity_name), Url::current([
             'entityName' => $model->entity_name,
             'entityId' => null,
             'page' => null
         ]));
         if ($model->entity_id) {
-            $str .= ' : ' . Html::a(Html::encode($model->entity_id), Url::current([
+            $entity_id = ' : ' . Html::a(Html::encode($model->entity_id), Url::current([
                     'entityName' => $model->entity_name,
                     'entityId' => $model->entity_id,
                     'page' => null
                 ]));
         }
-        $str .= ' ]';
-
         $url = Url::current(['userId' => $model->user_id, 'page' => null]);
+        $user_name = Html::a(Html::encode($model->user_name), $url);
         $action = Yii::t('lav45/logger', $model->action);
-        $str .= Html::a(Html::encode($model->user_name), $url) . ' ' . $action;
-
-        $str .= '<span>' . $this->formatter->asDatetime($model->created_at) . '</span>';
-
         if ($model->env) {
-            $str .= '<small style="float: right;">';
+            $env .= '<small style="float: right;">';
             $url = Url::current(['env' => $model->env, 'page' => null]);
-            $str .= Html::a(Html::encode($model->env), $url);
-            $str .= '</small>';
+            $env .= Html::a(Html::encode($model->env), $url);
+            $env .= '</small>';
         }
-        $str .= '</h4>';
-        $str .= '<ul class="details">';
+        $data = '';
         foreach ($model->getData() as $attribute => $values) {
-            $str .= $values->render();
+            $data .= $values->render();
         }
-        $str .= '</ul>';
+        $params = [
+            '{entity_name}' => $entity_name,
+            '{entity_id}' => $entity_id,
+            '{user_name}' => $user_name,
+            '{action}' => $action,
+            '{env}' => $env,
+            '{data}' => $data,
+        ];
 
-        return $str;
+        return strtr($this->template, $params);
     }
 }
